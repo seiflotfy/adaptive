@@ -1,110 +1,71 @@
 package ada
 
 import (
-	"encoding/binary"
 	"fmt"
 	"math"
-
-	metro "github.com/dgryski/go-metro"
 )
 
 // Sketches ...
 type Sketches struct {
-	sketches []*sketch
-	maxTime  uint64
+	sketches    []*Sketch
+	maxDuration uint64
 }
 
 // NewSketches ...
-func NewSketches(maxTime, w, d uint64, alpha float64) *Sketches {
-	num := uint64(math.Log2(float64(maxTime))) + 1
-	sketches := make([]*sketch, num)
+func NewSketches(maxDuration, w, d uint64, alpha float64) *Sketches {
+	num := uint64(math.Log2(float64(maxDuration)))
+	sketches := make([]*Sketch, num)
 	for i := range sketches {
-		sketches[i] = newSketch(w, d, alpha)
+		sketches[i] = NewSketch(w, d, alpha)
 	}
 	return &Sketches{
-		sketches: sketches,
-		maxTime:  maxTime,
+		sketches:    sketches,
+		maxDuration: maxDuration,
 	}
 }
 
 // Update ...
-func (sks *Sketches) Update(item []byte, timestamp, count uint64) {
-	if timestamp > sks.maxTime {
-		fmt.Println("Error: More than Max Time")
-		return
-	}
+func (sks *Sketches) Update(item []byte, timestamp, count uint64) error {
 	for i := range sks.sketches {
 		t := 1 + timestamp/uint64(math.Pow(2, float64(i)))
 		sks.sketches[i].Update(item, t, count)
 	}
+	return nil
 }
 
 // Estimate ...
-func (sks *Sketches) Estimate(item []byte, start, end uint64) uint64 {
+func (sks *Sketches) Estimate(item []byte, start, end uint64) (uint64, error) {
+	if end-start > sks.maxDuration {
+		return 0, fmt.Errorf("window to big [start, end] %d > %d", end-start, sks.maxDuration)
+	}
 	estimate := uint64(0)
 	for start <= end {
 		pow2 := float64(start & (^start + 1))
 		logpow2 := math.Log2(pow2)
+		if logpow2 < 0 {
+			logpow2 = 0
+		}
 		for i := logpow2; i >= 0; i-- {
 			if start+uint64(math.Pow(2, i))-1 <= end {
-				timestamp := 1 + start/uint64(math.Pow(2, i))
-				estimate += sks.sketches[uint64(i)].Count(item, timestamp)
+				t := 1 + start/uint64(math.Pow(2, i))
+				estimate += sks.sketches[uint64(i)].Count(item, t)
 				start += uint64(math.Pow(2, i))
 			}
 		}
 	}
-	return estimate
+	return estimate, nil
 }
 
-// sketch ...
-type sketch struct {
-	regs  [][]float64
-	w     uint64
-	d     uint64
-	alpha float64
-}
-
-func newSketch(w, d uint64, alpha float64) *sketch {
-	regs := make([][]float64, d)
-	for i := range regs {
-		regs[i] = make([]float64, uint64(math.Pow(2, float64(w))))
-	}
-
-	return &sketch{
-		w:     w,
-		d:     d,
-		regs:  regs,
-		alpha: alpha,
-	}
-}
-
-// Update ...
-func (sk *sketch) Update(value []byte, timestamp, count uint64) {
-	for i := range sk.regs {
-		j := sk.hash(value, timestamp, uint64(i))
-		sk.regs[i][j] += (sk.factor(timestamp) * float64(count))
-	}
-}
-
-// Count ...
-func (sk *sketch) Count(value []byte, timestamp uint64) uint64 {
-	min := math.MaxFloat64
-	for i := range sk.regs {
-		j := sk.hash(value, timestamp, uint64(i))
-		if sk.regs[i][j] < min {
-			min = sk.regs[i][j]
+// EstimateOverMaxDuration ...
+func (sks *Sketches) EstimateOverMaxDuration(item []byte, start, end uint64) uint64 {
+	estimate := uint64(0)
+	for i := start; i <= end; i += sks.maxDuration {
+		tmpEnd := i + sks.maxDuration - 1
+		if tmpEnd > end {
+			tmpEnd = end
 		}
+		res, _ := sks.Estimate(item, i, tmpEnd)
+		estimate += res
 	}
-	return uint64((min / sk.factor(timestamp)) + 1)
-}
-
-func (sk *sketch) hash(item []byte, timestamp, hashid uint64) uint64 {
-	timeBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(timeBytes, timestamp)
-	hj := metro.Hash64(timeBytes, hashid)
-	return metro.Hash64(item, hj) % uint64(len(sk.regs[0]))
-}
-
-func (sk *sketch) factor(timestamp uint64) float64 {
-	return math.Pow(sk.alpha, float64(timestamp))
+	return estimate
 }

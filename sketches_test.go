@@ -1,53 +1,69 @@
 package ada
 
 import (
-	"fmt"
 	"testing"
 )
 
 func TestEstimate(t *testing.T) {
-	/*
-		RangeQueries rangeQ = new RangeQueries(11, 10, 1.004, SketchType.CMS, "exp", 4);
-		rangeQ.update(1,1,5);
-		rangeQ.update(1, 2, 7);
-		rangeQ.update(1, 3, 11);
-		rangeQ.update(1, 6, 12);
-		rangeQ.update(1, 4, 100);
-		rangeQ.update(1, 5, 11);
-		rangeQ.update(1, 7, 1);
-		rangeQ.update(1, 8, 5);
-		rangeQ.update(1, 10, 5);
-
-
-		Console.WriteLine(rangeQ.estimateinRange(1, 4, 8));
-		Console.WriteLine(rangeQ.estimateinRange(1, 1, 10));
-		Console.WriteLine(rangeQ.estimateinRange(1, 4, 9));
-		Console.WriteLine(rangeQ.estimateinRange(1, 2, 7));
-		Console.WriteLine(rangeQ.estimateinRange(1, 2, 5));
-		Console.WriteLine(rangeQ.estimateinRange(1, 2, 2));
-		Console.WriteLine(rangeQ.estimateinRange(1, 4, 4));
-		Console.ReadKey();
-	*/
-	sks := NewSketches(11, 10, 4, 1.004)
+	sks := NewSketches(1000, 4, 7, 1.004)
 	item1 := []byte("foo")
-	sks.Update(item1, 1, 5)
-	sks.Update(item1, 2, 7)
-	sks.Update(item1, 3, 11)
-	sks.Update(item1, 6, 12)
-	sks.Update(item1, 4, 100)
-	sks.Update(item1, 5, 11)
-	sks.Update(item1, 7, 1)
-	sks.Update(item1, 8, 5)
-	sks.Update(item1, 10, 5)
-	fmt.Println(sks.Estimate(item1, 4, 8))
+
+	count11 := uint64(1000000)
+	timestamp11 := uint64(1000)
+	sks.Update(item1, timestamp11, count11)
+	got, err := sks.Estimate(item1, 0, timestamp11)
+	if err != nil {
+		t.Errorf("expected no err, got %v", err)
+	} else if got != count11 {
+		t.Errorf("expected %d, got %d", count11, got)
+	}
 
 	item2 := []byte("bar")
-	sks.Update(item2, 11, 500)
-	sks.Update(item2, 5, 11)
-	sks.Update(item2, 7, 1)
-	sks.Update(item2, 8, 5)
-	sks.Update(item2, 10, 510)
+	sks.Update(item2, timestamp11, count11)
+	got, err = sks.Estimate(item2, 0, timestamp11)
+	if err != nil {
+		t.Errorf("expected no err, got %v", err)
+	} else if got != count11 {
+		t.Errorf("expected %d, got %d", count11, got)
+	}
 
-	fmt.Println(sks.Estimate(item1, 4, 8))
-	fmt.Println(sks.Estimate(item2, 10, 11))
+	count12 := uint64(1337)
+	timestamp12 := uint64(2000)
+	sks.Update(item1, timestamp12, count12)
+	got, err = sks.Estimate(item1, 0, timestamp12)
+	if err == nil {
+		t.Errorf("expected err, got %v", err)
+	} else if err == nil && got != count12 {
+		t.Errorf("expected %d, got %d", count12, got)
+	}
+
+	got, err = sks.Estimate(item1, timestamp11, timestamp12-1)
+	if err != nil {
+		t.Errorf("expected err, got %v", err)
+	} else if err == nil && got != count11 {
+		t.Errorf("expected %d, got %d", count11, got)
+	}
+
+	got, err = sks.Estimate(item1, timestamp11, timestamp12)
+	if err != nil {
+		t.Errorf("expected err, got %v", err)
+	} else if err == nil && got != count11+count12 {
+		t.Errorf("expected %d, got %d", count11+count12, got)
+	}
+
+	count13 := uint64(900000)
+	timestamp13 := uint64(10100)
+	sks.Update(item1, timestamp13, count13)
+	got, err = sks.Estimate(item1, 0, timestamp13)
+	if err == nil {
+		t.Errorf("expected err, got %v", err)
+	} else if err == nil && got != count13 {
+		t.Errorf("expected %d, got %d", count13, got)
+	}
+
+	got = sks.EstimateOverMaxDuration(item1, 0, timestamp13)
+	if got != count13+count12+count11 {
+		t.Errorf("expected %d, got %d", count13, count13+count12+count11)
+	}
+
 }
