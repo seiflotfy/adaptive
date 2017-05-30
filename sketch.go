@@ -58,5 +58,5 @@ func (sk *Sketch) hash(item []byte, timestamp, hashid uint64) uint64 {
 }
 
 func (sk *Sketch) factor(timestamp uint64) float64 {
-	return math.Pow(sk.alpha, float64(timestamp))
+	return math.Pow(sk.alpha, 1/float64(timestamp))
 }

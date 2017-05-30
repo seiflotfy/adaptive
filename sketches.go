@@ -9,11 +9,14 @@ import (
 type Sketches struct {
 	sketches    []*Sketch
 	maxDuration uint64
+	w           uint64
+	d           uint64
+	alpha       float64
 }
 
 // NewSketches ...
 func NewSketches(maxDuration, w, d uint64, alpha float64) *Sketches {
-	num := uint64(math.Log2(float64(maxDuration)))
+	num := uint64(math.Log2(float64(maxDuration))) + 1
 	sketches := make([]*Sketch, num)
 	for i := range sketches {
 		sketches[i] = NewSketch(w, d, alpha)
@@ -21,6 +24,9 @@ func NewSketches(maxDuration, w, d uint64, alpha float64) *Sketches {
 	return &Sketches{
 		sketches:    sketches,
 		maxDuration: maxDuration,
+		w:           w,
+		d:           d,
+		alpha:       alpha,
 	}
 }
 
@@ -39,6 +45,7 @@ func (sks *Sketches) Estimate(item []byte, start, end uint64) (uint64, error) {
 		return 0, fmt.Errorf("window to big [start, end] %d > %d", end-start, sks.maxDuration)
 	}
 	estimate := uint64(0)
+
 	for start <= end {
 		pow2 := float64(start & (^start + 1))
 		logpow2 := math.Log2(pow2)
@@ -46,26 +53,13 @@ func (sks *Sketches) Estimate(item []byte, start, end uint64) (uint64, error) {
 			logpow2 = 0
 		}
 		for i := logpow2; i >= 0; i-- {
-			if start+uint64(math.Pow(2, i))-1 <= end {
+			if float64(start)+math.Pow(2, i)-1 <= float64(end) {
 				t := 1 + start/uint64(math.Pow(2, i))
 				estimate += sks.sketches[uint64(i)].Count(item, t)
 				start += uint64(math.Pow(2, i))
+				break
 			}
 		}
 	}
 	return estimate, nil
-}
-
-// EstimateOverMaxDuration ...
-func (sks *Sketches) EstimateOverMaxDuration(item []byte, start, end uint64) uint64 {
-	estimate := uint64(0)
-	for i := start; i <= end; i += sks.maxDuration {
-		tmpEnd := i + sks.maxDuration - 1
-		if tmpEnd > end {
-			tmpEnd = end
-		}
-		res, _ := sks.Estimate(item, i, tmpEnd)
-		estimate += res
-	}
-	return estimate
 }
