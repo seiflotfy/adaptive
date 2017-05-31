@@ -85,7 +85,8 @@ func (sks *Sketches) Estimate(item []byte, start, end time.Time) (uint64, error)
 	return sks.estimate(item, tmpStart, tmpEnd), nil
 }
 
-// MultiEstimate  ...
+// MultiEstimate returns the count of an item within a given timerange [start, end], where range can be > maxDuration
+// Complexity however becomes O(n^3)
 func (sks *Sketches) MultiEstimate(item []byte, start, end time.Time) uint64 {
 	estimate := uint64(0)
 	orgEnd := uint64(end.UnixNano() / int64(sks.timeUnit))
