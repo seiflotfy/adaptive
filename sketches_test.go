@@ -78,17 +78,15 @@ func TestEstimateReal(t *testing.T) {
 	item1 := []byte("foo")
 	exp := uint64(0)
 
-	for i := uint64(0); i < uint64(d); i++ {
+	for i := uint64(0); i < uint64(d*2); i++ {
 		count := i + 1000
 		exp += count
 		pexp := exp * 5 / 100
 		expRange := [2]uint64{exp - pexp, exp + pexp}
 		end := start.Add(time.Duration(i) * time.Hour)
 		sks.Update(item1, end, count)
-		got, err := sks.Estimate(item1, start, end)
-		if err != nil {
-			t.Errorf("expected no err, got %v", err)
-		} else if got < expRange[0] || got > expRange[1] {
+		got := sks.MultiEstimate(item1, start, end)
+		if got < expRange[0] || got > expRange[1] {
 			t.Errorf("expected %d, got %d", exp, got)
 		}
 	}
