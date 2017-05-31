@@ -1,4 +1,4 @@
-package ada
+package adaptive
 
 import (
 	"testing"
@@ -6,13 +6,15 @@ import (
 )
 
 func TestEstimate(t *testing.T) {
-	sks := NewSketches(1000, 4, 7, 1.004)
+	now := time.Now()
+	sks := NewSketches(1000*time.Second, time.Second, 4, 7, 1.004)
 	item1 := []byte("foo")
 
 	count11 := uint64(1000000)
-	timestamp11 := uint64(1000)
+	timestamp11 := now.Add(1000 * time.Second)
 	sks.Update(item1, timestamp11, count11)
-	got, err := sks.Estimate(item1, 0, timestamp11)
+
+	got, err := sks.Estimate(item1, now, timestamp11)
 	if err != nil {
 		t.Errorf("expected no err, got %v", err)
 	} else if got != count11 {
@@ -21,7 +23,7 @@ func TestEstimate(t *testing.T) {
 
 	item2 := []byte("bar")
 	sks.Update(item2, timestamp11, count11)
-	got, err = sks.Estimate(item2, 0, timestamp11)
+	got, err = sks.Estimate(item2, now, timestamp11)
 	if err != nil {
 		t.Errorf("expected no err, got %v", err)
 	} else if got != count11 {
@@ -29,16 +31,15 @@ func TestEstimate(t *testing.T) {
 	}
 
 	count12 := uint64(1337)
-	timestamp12 := uint64(2000)
+	timestamp12 := now.Add(2000 * time.Second)
 	sks.Update(item1, timestamp12, count12)
-	got, err = sks.Estimate(item1, 0, timestamp12)
+
+	got, err = sks.Estimate(item1, now, timestamp12)
 	if err == nil {
 		t.Errorf("expected err, got %v", err)
-	} else if err == nil && got != count12 {
-		t.Errorf("expected %d, got %d", count12, got)
 	}
 
-	got, err = sks.Estimate(item1, timestamp11, timestamp12-1)
+	got, err = sks.Estimate(item1, timestamp11, timestamp12.Add(-time.Second))
 	if err != nil {
 		t.Errorf("expected err, got %v", err)
 	} else if err == nil && got != count11 {
@@ -53,16 +54,16 @@ func TestEstimate(t *testing.T) {
 	}
 
 	count13 := uint64(900000)
-	timestamp13 := uint64(10100)
+	timestamp13 := now.Add(10100 * time.Second)
 	sks.Update(item1, timestamp13, count13)
-	got, err = sks.Estimate(item1, 0, timestamp13)
+	got, err = sks.Estimate(item1, now, timestamp13)
 	if err == nil {
 		t.Errorf("expected err, got %v", err)
 	} else if err == nil && got != count13 {
 		t.Errorf("expected %d, got %d", count13, got)
 	}
 
-	got, err = sks.Estimate(item1, timestamp13-500, timestamp13+500)
+	got, err = sks.Estimate(item1, timestamp13.Add(-500), timestamp13.Add(500))
 	if err != nil {
 		t.Errorf("expected err, got %v", err)
 	} else if got != count13 {
@@ -71,9 +72,9 @@ func TestEstimate(t *testing.T) {
 }
 
 func TestEstimateReal(t *testing.T) {
-	d := 720
-	now := uint64(time.Now().UnixNano() / int64(time.Hour))
-	sks := NewSketches(uint64(d), 7, 7, 1.004)
+	d := time.Duration(720)
+	start := time.Now()
+	sks := NewSketches(d*time.Hour, time.Hour, 7, 7, 1.004)
 	item1 := []byte("foo")
 	exp := uint64(0)
 
@@ -82,8 +83,9 @@ func TestEstimateReal(t *testing.T) {
 		exp += count
 		pexp := exp * 5 / 100
 		expRange := [2]uint64{exp - pexp, exp + pexp}
-		sks.Update(item1, now+i, count)
-		got, err := sks.Estimate(item1, now, now+uint64(i))
+		end := start.Add(time.Duration(i) * time.Hour)
+		sks.Update(item1, end, count)
+		got, err := sks.Estimate(item1, start, end)
 		if err != nil {
 			t.Errorf("expected no err, got %v", err)
 		} else if got < expRange[0] || got > expRange[1] {
