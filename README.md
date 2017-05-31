@@ -10,21 +10,28 @@ Obtaining frequency information of data streams, in limited space, is a well-rec
 ## Usage
 ```go
 d := time.Duration(720) // 720 hours range
-start := time.Now()
-sks := ada.NewSketches(d*time.Hour, time.Hour, 9, 7, 1.004)
-item1 := []byte("foo")
+unit := time.Hour
+
+// Create sketch queryable over 720 hours range, where a unit is an hour
+sks := adaptive.NewSketches(d*unit, unit, 9, 7, 1.004)
+
+item := []byte("foo")
 exp := uint64(0)
+start := time.Now()
 
 for i := uint64(0); i < uint64(d); i++ {
     count := i + 1000
     exp += count
-    end := start.Add(time.Duration(i) * time.Hour)
-    sks.Update(item1, end, count)
+    timestamp := start.Add(time.Duration(i) * time.Hour)
 
-    got, _ := sks.Estimate(item1, start, end)
+    // Update item for given timestamp
+    sks.Update(item, timestamp, count)
+
+    // Estimate for range since start till timestamp
+    got, _ := sks.Estimate(item, start, timestamp)
     fmt.Printf("Expected %d, got %d\n", exp, got)
 
-    got, _ = sks.Estimate(item1, end.Add(-time.Hour/5), end.Add(time.Hour/5))
+    got, _ = sks.Estimate(item, timestamp.Add(-time.Hour/5), timestamp.Add(time.Hour/5))
     fmt.Printf("Expected %d, got %d\n", count, got)
 }
 ```
