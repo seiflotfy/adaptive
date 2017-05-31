@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	ada "github.com/seiflotfy/ada-sketches"
+	adaptive "github.com/seiflotfy/ada-sketches"
 )
 
 func main() {
 	d := time.Duration(720)
 	start := time.Now()
-	sks := ada.NewSketches(d*time.Hour, time.Hour, 9, 7, 1.004)
+	sks := adaptive.NewSketches(d*time.Hour, time.Hour, 9, 7, 1.004)
 	item1 := []byte("foo")
 	exp := uint64(0)
 
