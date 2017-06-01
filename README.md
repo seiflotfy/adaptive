@@ -1,6 +1,5 @@
 # adaptive
 
-## Adaptive Sketches
 A probabilistic datastructure to estimate **How many times did i see item "x" within the timerange "T"**, using a set Adaptive Count-Min Sketches.
 
 The Adaptive Count-Min Sketch algorithm (Ada-CMS), is just CMS but with the update and query mechanisms adapted to use the pre-emphasis and de-emphasis mechanism.
