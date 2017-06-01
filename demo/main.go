@@ -4,26 +4,39 @@ import (
 	"fmt"
 	"time"
 
-	adaptive "github.com/seiflotfy/ada-sketches"
+	"github.com/seiflotfy/adaptive"
 )
 
 func main() {
-	d := time.Duration(720)
-	start := time.Now()
-	sks := adaptive.NewSketches(d*time.Hour, time.Hour, 9, 7, 1.004)
-	item1 := []byte("foo")
-	exp := uint64(0)
+	duration := time.Duration(720 * time.Hour) // 720 hours range
+	unit := time.Hour
 
-	for i := uint64(0); i < uint64(d); i++ {
+	// Create sketch queryable with
+	// duation = 720 hours range
+	// unit = 1 hour
+	// width per sketch = 2^9
+	// depth per sketch = 8
+	// alpha = 1.004 (used for emphasizing and de-emphasizing)
+	sks := adaptive.NewSketches(duration, unit, 9, 7, 1.004)
+
+	item := []byte("foo")
+	exp := uint64(0)
+	start := time.Now()
+
+	for i := uint64(0); i < uint64(duration); i++ {
 		count := i + 1000
 		exp += count
-		end := start.Add(time.Duration(i) * time.Hour)
-		sks.Update(item1, end, count)
+		timestamp := start.Add(time.Duration(i) * time.Hour)
 
-		got, _ := sks.Estimate(item1, start, end)
+		// Update item for given timestamp
+		sks.Update(item, timestamp, count)
+
+		// Estimate count of item within time range [start, timestamp]
+		got, _ := sks.Estimate(item, start, timestamp)
 		fmt.Printf("Expected %d, got %d\n", exp, got)
 
-		got, _ = sks.Estimate(item1, end.Add(-time.Hour/2), end.Add(time.Hour/2))
+		// Estimate count of item within time range [timestamp-12m, timestamp+12m]
+		got, _ = sks.Estimate(item, timestamp.Add(-time.Hour/5), timestamp.Add(time.Hour/5))
 		fmt.Printf("Expected %d, got %d\n", count, got)
 	}
 }

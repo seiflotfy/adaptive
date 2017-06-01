@@ -9,7 +9,7 @@ import (
 // Sketches represents an set of Adaptive Count-Min Sketch algorithm (Ada-CMS),
 // which is just CMS but with the update and query mechanisms adapted to use the pre-emphasis and de-emphasis mechanism.
 type Sketches struct {
-	sketches    []*CMS
+	sketches    []*ACMS
 	maxDuration time.Duration
 	timeUnit    time.Duration
 	w           uint64
@@ -17,7 +17,7 @@ type Sketches struct {
 	alpha       float64
 }
 
-// NewSketches returns an adaptive Sketch (representing multiple Count-Min Sketches) with:
+// NewSketches returns an adaptive Sketch (representing multiple Adaptive Count-Min Sketches) with:
 // maxDuration: specifies the max queriable range
 // timeUnit: degines the unit of measurment, ns, ms, s, etc...
 // w: width of CMS is 2^w
@@ -26,9 +26,9 @@ type Sketches struct {
 func NewSketches(maxDuration, timeUnit time.Duration, w, d uint64, alpha float64) *Sketches {
 	convDuration := maxDuration / timeUnit
 	numSketches := uint64(math.Log2(float64(convDuration))) + 1
-	sketches := make([]*CMS, numSketches)
+	sketches := make([]*ACMS, numSketches)
 	for i := range sketches {
-		sketches[i] = NewCMS(w, d, alpha)
+		sketches[i] = NewACMS(w, d, alpha)
 	}
 	return &Sketches{
 		sketches:    sketches,
@@ -45,12 +45,12 @@ func (sks *Sketches) generateTimestamp(timestamp uint64, i int) uint64 {
 	return 1 + timestamp/(uint64(math.Pow(2, float64(i))))
 }
 
-// Update an item with a new count with at a given timestamp
-func (sks *Sketches) Update(item []byte, timestamp time.Time, count uint64) error {
+// Insert an item with a new count with at a given timestamp
+func (sks *Sketches) Insert(item []byte, timestamp time.Time, count uint64) error {
 	tmpTimestamp := uint64(timestamp.UnixNano() / int64(sks.timeUnit))
 	for i := range sks.sketches {
 		t := sks.generateTimestamp(tmpTimestamp, i)
-		sks.sketches[i].Update(item, t, count)
+		sks.sketches[i].Insert(item, t, count)
 	}
 	return nil
 }
@@ -63,7 +63,7 @@ func (sks *Sketches) estimate(item []byte, start, end uint64) uint64 {
 		for i := logpow2; i >= 0; i-- {
 			if float64(start)+math.Pow(2, i)-1 <= float64(end) {
 				t := sks.generateTimestamp(start, int(i))
-				estimate += sks.sketches[uint64(i)].Count(item, t)
+				estimate += sks.sketches[uint64(i)].Estimate(item, t)
 				start += uint64(math.Pow(2, i))
 				break
 			}

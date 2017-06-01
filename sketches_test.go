@@ -1,6 +1,7 @@
 package adaptive
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -12,7 +13,7 @@ func TestEstimate(t *testing.T) {
 
 	count11 := uint64(1000000)
 	timestamp11 := now.Add(1000 * time.Second)
-	sks.Update(item1, timestamp11, count11)
+	sks.Insert(item1, timestamp11, count11)
 
 	got, err := sks.Estimate(item1, now, timestamp11)
 	if err != nil {
@@ -22,7 +23,7 @@ func TestEstimate(t *testing.T) {
 	}
 
 	item2 := []byte("bar")
-	sks.Update(item2, timestamp11, count11)
+	sks.Insert(item2, timestamp11, count11)
 	got, err = sks.Estimate(item2, now, timestamp11)
 	if err != nil {
 		t.Errorf("expected no err, got %v", err)
@@ -32,7 +33,7 @@ func TestEstimate(t *testing.T) {
 
 	count12 := uint64(1337)
 	timestamp12 := now.Add(2000 * time.Second)
-	sks.Update(item1, timestamp12, count12)
+	sks.Insert(item1, timestamp12, count12)
 
 	got, err = sks.Estimate(item1, now, timestamp12)
 	if err == nil {
@@ -55,7 +56,7 @@ func TestEstimate(t *testing.T) {
 
 	count13 := uint64(900000)
 	timestamp13 := now.Add(10100 * time.Second)
-	sks.Update(item1, timestamp13, count13)
+	sks.Insert(item1, timestamp13, count13)
 	got, err = sks.Estimate(item1, now, timestamp13)
 	if err == nil {
 		t.Errorf("expected err, got %v", err)
@@ -84,10 +85,44 @@ func TestEstimateReal(t *testing.T) {
 		pexp := exp * 5 / 100
 		expRange := [2]uint64{exp - pexp, exp + pexp}
 		end := start.Add(time.Duration(i) * time.Hour)
-		sks.Update(item1, end, count)
+		sks.Insert(item1, end, count)
 		got := sks.MultiEstimate(item1, start, end)
 		if got < expRange[0] || got > expRange[1] {
 			t.Errorf("expected %d, got %d", exp, got)
 		}
+	}
+}
+
+func ExampleSketch() {
+	duration := time.Duration(720 * time.Hour) // 720 hours range
+	unit := time.Hour
+
+	// Create sketch queryable with
+	// duation = 720 hours range
+	// unit = 1 hour
+	// width per sketch = 2^9
+	// depth per sketch = 8
+	// alpha = 1.004 (used for emphasizing and de-emphasizing)
+	sks := NewSketches(duration, unit, 9, 7, 1.004)
+
+	item := []byte("foo")
+	exp := uint64(0)
+	start := time.Now()
+
+	for i := uint64(0); i < uint64(duration); i++ {
+		count := i + 1000
+		exp += count
+		timestamp := start.Add(time.Duration(i) * time.Hour)
+
+		// Update item for given timestamp
+		sks.Insert(item, timestamp, count)
+
+		// Estimate count of item within time range [start, timestamp]
+		got, _ := sks.Estimate(item, start, timestamp)
+		fmt.Printf("Expected %d, got %d\n", exp, got)
+
+		// Estimate count of item within time range [timestamp-12m, timestamp+12m]
+		got, _ = sks.Estimate(item, timestamp.Add(-time.Hour/5), timestamp.Add(time.Hour/5))
+		fmt.Printf("Expected %d, got %d\n", count, got)
 	}
 }
