@@ -32,10 +32,10 @@ func main() {
 
 	// Estimate count of item within time range [start, timestamp]
 	got, _ := sks.Estimate(item, start, timestamp)
-	fmt.Printf("Expected count for \"item\" %s in timerange [%v, %v] to be %d, got %d \n",
+	fmt.Printf("Expected count for \"%s\" in timerange [%v, %v] to be %d, got %d \n",
 		string(item), start.Format(time.Kitchen), timestamp.Format(time.Kitchen), exp, got)
 
-	// Move one hour
+	// Move one hour and set new count
 	timestamp = timestamp.Add(time.Hour)
 	count = 100000
 	exp += count
@@ -46,17 +46,19 @@ func main() {
 	// Estimate count of item within time range [start, timestamp]
 	got, _ = sks.Estimate(item, start, timestamp)
 
-	fmt.Printf("Expected count for \"item\" %s in timerange [%v, %v] to be %d, got %d \n",
+	fmt.Printf("Expected count for \"%s\" in timerange [%v, %v] to be %d, got %d \n",
 		string(item), start.Format(time.Kitchen), timestamp.Format(time.Kitchen), got, exp)
 
 	// Estimate count of item within time range [timestamp-12m, timestamp+12m]
-	got, _ = sks.Estimate(item, timestamp.Add(-time.Hour/5), timestamp.Add(time.Hour/5))
+	t1 := timestamp.Add(-time.Hour / 5)
+	t2 := timestamp.Add(time.Hour / 5)
+	got, _ = sks.Estimate(item, t1, t2)
 
-	fmt.Printf("Expected count for \"item\" %s in timerange [%v, %v] to be %d, got %d \n",
-		string(item), timestamp.Add(-time.Hour/5).Format(time.Kitchen), timestamp.Add(time.Hour/5).Format(time.Kitchen), got, count)
+	fmt.Printf("Expected count for \"%s\" in timerange [%v, %v] to be %d, got %d \n",
+		string(item), t1.Format(time.Kitchen), t2.Format(time.Kitchen), got, count)
 
 	// Output:
-	// Expected count for "item" foo in timerange [2:56PM, 3:56PM] to be 1337, got 1337
-	// Expected count for "item" foo in timerange [2:56PM, 4:56PM] to be 101337, got 101337
-	// Expected count for "item" foo in timerange [4:44PM, 5:08PM] to be 100000, got 100000
+	// Expected count for "foo" in timerange [2:56PM, 3:56PM] to be 1337, got 1337
+	// Expected count for "foo" in timerange [2:56PM, 4:56PM] to be 101337, got 101337
+	// Expected count for "foo" in timerange [4:44PM, 5:08PM] to be 100000, got 100000
 }
