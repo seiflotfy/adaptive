@@ -93,7 +93,7 @@ func TestEstimateReal(t *testing.T) {
 	}
 }
 
-func ExampleSketch() {
+func Example() {
 	duration := time.Duration(720 * time.Hour) // 720 hours range
 	unit := time.Hour
 
