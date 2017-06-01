@@ -141,7 +141,8 @@ func Example() {
 	got, _ = sks.Estimate(item, timestamp.Add(-time.Hour/5), timestamp.Add(time.Hour/5))
 
 	fmt.Printf("Expected count for \"item\" %s in timerange [%v, %v] to be %d, got %d \n",
-		string(item), timestamp.Add(-time.Hour/5).Format(time.Kitchen), timestamp.Add(time.Hour/5).Format(time.Kitchen), got, count)
+		string(item), timestamp.Add(-time.Hour/5).Format(time.Kitchen),
+		timestamp.Add(time.Hour/5).Format(time.Kitchen), got, count)
 
 	// Output:
 	// Expected count for "item" foo in timerange [2:56PM, 3:56PM] to be 1337, got 1337
