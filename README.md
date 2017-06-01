@@ -46,7 +46,7 @@ fmt.Printf("Expected count for \"%s\" in timerange [%v, %v] to be %d, got %d \n"
     string(item), t1.Format(time.Kitchen), t2.Format(time.Kitchen), count2, got)
 
 // Output:
-// Expected count for "foo" in timerange [2:56PM, 3:56PM] to be 1337, got 1337
-// Expected count for "foo" in timerange [2:56PM, 4:56PM] to be 101337, got 101337
-// Expected count for "foo" in timerange [4:44PM, 5:08PM] to be 100000, got 100000
+// Expected count for "foo" in timerange [3:21PM, 4:21PM] to be 1337, got 101337
+// Expected count for "foo" in timerange [3:21PM, 4:31PM] to be 101337, got 101337
+// Expected count for "foo" in timerange [3:21PM, 4:21PM] to be 100000, got 100000
 ```
