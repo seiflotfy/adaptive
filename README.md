@@ -1,6 +1,8 @@
 # adaptive
 
-Adaptive Sketches is probabilistic datastructure to estimate *How many times did i see item "x" within the timerange "T"*, using a set Adaptive Count-Min Sketches.
+## Adaptive Sketches
+A probabilistic datastructure to estimate **How many times did i see item "x" within the timerange "T"**, using a set Adaptive Count-Min Sketches.
+
 The Adaptive Count-Min Sketch algorithm (Ada-CMS), is just CMS but with the update and query mechanisms adapted to use the pre-emphasis and de-emphasis mechanism.
 
 For more information read the post by Adrian Colyer [Time Adaptive Sketches (Ada-Sketches) for Summarizing Data Streams](https://blog.acolyer.org/2016/07/21/time-adaptive-sketches-ada-sketches-for-summarizing-data-streams/) or [the official paper with the same title](https://www.cs.rice.edu/~as143/Papers/16-ada-sketches.pdf) by Anshumali Shrivastava, Arnd Christian König, Mikhail Bilenko) 
