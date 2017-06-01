@@ -8,7 +8,7 @@ For more information read the post by Adrian Colyer [Time Adaptive Sketches (Ada
 
 ## Usage
 ```go
-    duration := time.Duration(720 * time.Hour) // 720 hours range
+	duration := time.Duration(720 * time.Hour) // 720 hours range
 	unit := time.Hour
 
 	// Create sketch queryable with
@@ -20,42 +20,30 @@ For more information read the post by Adrian Colyer [Time Adaptive Sketches (Ada
 	sks := adaptive.NewSketches(duration, unit, 9, 7, 1.004)
 
 	item := []byte("foo")
-	exp := uint64(0)
-	start := time.Now()
+	t1 := time.Now()
+	t2 := t1.Add(time.Hour)
+	t3 := t2.Add(time.Hour / 6)
+	count1 := uint64(1337)
+	count2 := uint64(100000)
 
-	count := uint64(1337)
-	exp += count
-	timestamp := start.Add(time.Hour)
+	// Update item for given timestamps
+	sks.Insert(item, t1, count1)
+	sks.Insert(item, t2, count2)
 
-	// Update item for given timestamp
-	sks.Insert(item, timestamp, count)
-
-	// Estimate count of item within time range [start, timestamp]
-	got, _ := sks.Estimate(item, start, timestamp)
+	// Estimate count of item within time range [t1, t2]
+	got, _ := sks.Estimate(item, t1, t2)
 	fmt.Printf("Expected count for \"%s\" in timerange [%v, %v] to be %d, got %d \n",
-		string(item), start.Format(time.Kitchen), timestamp.Format(time.Kitchen), exp, got)
+		string(item), t1.Format(time.Kitchen), t2.Format(time.Kitchen), count1, got)
 
-	// Move one hour and set new count
-	timestamp = timestamp.Add(time.Hour)
-	count = 100000
-	exp += count
-
-	// Update item for given timestamp
-	sks.Insert(item, timestamp, count)
-
-	// Estimate count of item within time range [start, timestamp]
-	got, _ = sks.Estimate(item, start, timestamp)
-
+	// Estimate count of item within time range [t1, t3]
+	got, _ = sks.Estimate(item, t1, t3)
 	fmt.Printf("Expected count for \"%s\" in timerange [%v, %v] to be %d, got %d \n",
-		string(item), start.Format(time.Kitchen), timestamp.Format(time.Kitchen), got, exp)
+		string(item), t1.Format(time.Kitchen), t3.Format(time.Kitchen), count1+count2, got)
 
-	// Estimate count of item within time range [timestamp-12m, timestamp+12m]
-	t1 := timestamp.Add(-time.Hour / 5)
-	t2 := timestamp.Add(time.Hour / 5)
-	got, _ = sks.Estimate(item, t1, t2)
-
+	// Estimate count of item within time range [t1, t3]
+	got, _ = sks.Estimate(item, t2, t3)
 	fmt.Printf("Expected count for \"%s\" in timerange [%v, %v] to be %d, got %d \n",
-		string(item), t1.Format(time.Kitchen), t2.Format(time.Kitchen), got, count)
+		string(item), t1.Format(time.Kitchen), t2.Format(time.Kitchen), count2, got)
 
 	// Output:
 	// Expected count for "foo" in timerange [2:56PM, 3:56PM] to be 1337, got 1337
