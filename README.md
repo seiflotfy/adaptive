@@ -1,4 +1,4 @@
-# adaptive
+# adaptive [![GoDoc](https://godoc.org/github.com/seiflotfy/adaptive?status.svg)](https://godoc.org/github.com/seiflotfy/adaptive)
 
 A probabilistic datastructure to estimate **How many times did i see item "x" within the timerange "T"**, using a set Adaptive Count-Min Sketches.
 
