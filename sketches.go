@@ -41,7 +41,6 @@ func NewSketches(maxDuration, timeUnit time.Duration, w, d uint64, alpha float64
 }
 
 func (sks *Sketches) generateTimestamp(timestamp uint64, i int) uint64 {
-	timestamp = timestamp % uint64(sks.maxDuration)
 	return 1 + timestamp/(uint64(math.Pow(2, float64(i))))
 }
 

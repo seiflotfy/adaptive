@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"testing"
 	"time"
-
-	"github.com/seiflotfy/adaptive"
 )
 
 func TestEstimate(t *testing.T) {
@@ -105,7 +103,7 @@ func Example() {
 	// width per sketch = 2^9
 	// depth per sketch = 8
 	// alpha = 1.004 (used for emphasizing and de-emphasizing)
-	sks := adaptive.NewSketches(duration, unit, 9, 7, 1.004)
+	sks := NewSketches(duration, unit, 9, 7, 1.004)
 
 	item := []byte("foo")
 	t1 := time.Now()
@@ -115,8 +113,8 @@ func Example() {
 	count2 := uint64(100000)
 
 	// Update item for given timestamps
-	sks.Insert(item, t1, count1)
-	sks.Insert(item, t2, count2)
+	sks.Insert(item, t2, count1)
+	sks.Insert(item, t3, count2)
 
 	// Estimate count of item within time range [t1, t2]
 	got, _ := sks.Estimate(item, t1, t2)
@@ -129,12 +127,12 @@ func Example() {
 		string(item), t1.Format(time.Kitchen), t3.Format(time.Kitchen), count1+count2, got)
 
 	// Estimate count of item within time range [t1, t3]
-	got, _ = sks.Estimate(item, t2, t3)
+	got, _ = sks.Estimate(item, t3, t3.Add(time.Hour/10))
 	fmt.Printf("Expected count for \"%s\" in timerange [%v, %v] to be %d, got %d \n",
 		string(item), t1.Format(time.Kitchen), t2.Format(time.Kitchen), count2, got)
 
 	// Output:
-	// Expected count for "foo" in timerange [3:21PM, 4:21PM] to be 1337, got 101337
+	// Expected count for "foo" in timerange [3:21PM, 4:21PM] to be 1337, got 1337
 	// Expected count for "foo" in timerange [3:21PM, 4:31PM] to be 101337, got 101337
 	// Expected count for "foo" in timerange [3:21PM, 4:21PM] to be 100000, got 100000
 }
