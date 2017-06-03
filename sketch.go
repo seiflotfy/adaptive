@@ -58,5 +58,5 @@ func (acms *ACMS) hash(item []byte, timestamp, hashid uint64) uint64 {
 }
 
 func (acms *ACMS) factor(timestamp uint64) float64 {
-	return math.Pow(acms.alpha, 1/float64(timestamp))
+	return math.Pow(acms.alpha, math.Sqrt(float64(timestamp)))
 }
